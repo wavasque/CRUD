@@ -1,0 +1,69 @@
+using MBproject.Models.Configuracion.Pages.Usuarios;
+using System;
+using System.Collections.Generic;
+using System.Data.Entity;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace MBproject.Models.Configuracion.Pages.Privilegios
+{
+    internal class PrivilegiosEliminarPagosModel
+    {
+        // Obtener todos los registros
+        public static async Task<List<ADMPRIVCONTROL>> ObtenerTodosLosRegistros()
+        {
+            using (var context = new MBprojectDBEntities())
+            {
+                return await Task.Run(() =>
+                    context.ADMPRIVCONTROL.ToListAsync()
+                );
+            }
+        }
+
+        // Obtener un registro por Id
+        public static async Task<ADMPRIVCONTROL> ObtenerRegistro(int id)
+        {
+            using (var context = new MBprojectDBEntities())
+            {
+                return await Task.Run(() =>
+                {
+                    return context.ADMPRIVCONTROL.FirstOrDefault(x => x.IdControlAcceso == id);
+                });
+            }
+        }
+
+        // Crear un nuevo registro
+        public static async Task<bool> CrearRegistro(ADMPRIVCONTROL model)
+        {
+            model.Acceso = 1; // Asignar un valor por defecto para Acceso
+            var usr = await UsuariosModel.ObtenerRegistro((int)model.IdUsuario);
+            model.Usuario = usr.Usuario; // Asignar el usuario al modelo
+            using (var context = new MBprojectDBEntities())
+            {
+                context.ADMPRIVCONTROL.Add(model);
+                return await Task.Run(() => context.SaveChanges() > 0);
+            }
+        }
+
+        // Actualizar un registro existente
+        public static async Task<bool> ActualizarRegistro(ADMPRIVCONTROL model)
+        {
+            var usr = await UsuariosModel.ObtenerRegistro((int)model.IdUsuario);
+            using (var context = new MBprojectDBEntities())
+            {
+                var entidad = context.ADMPRIVCONTROL.FirstOrDefault(x => x.IdControlAcceso == model.IdControlAcceso);
+                if (entidad == null) return false;
+                entidad.IdUsuario = model.IdUsuario;
+                entidad.Usuario = usr.Usuario;
+                entidad.CodigoControl = model.CodigoControl;
+                entidad.Acceso = model.Acceso;
+                return await Task.Run(() => context.SaveChanges() > 0);
+            }
+        }
+
+    }
+}
+
+
+
+
