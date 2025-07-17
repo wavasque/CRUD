@@ -1,0 +1,8 @@
+MBprojectModel.edmx
+MBprojectModel.Context.tt
+MBprojectModel.Context.cs
+MBprojectDBEntities
+MBprojectDBEntities()
+ADMPRIVCONTROL : DbSet <ADMPRIVCONTROL>
+
+
