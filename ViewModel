@@ -1,0 +1,206 @@
+using MBproject.Core;
+using MBproject.Models;
+using MBproject.Models.Configuracion.Pages.Privilegios;
+using MBproject.Models.Configuracion.Pages.Usuarios;
+using NPOI.SS.Formula.Functions;
+using Prism.Commands;
+using Prism.Mvvm;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
+
+
+namespace MBproject.ViewModels.Configuracion.Pages.Privilegios
+{
+  
+    internal class PrivilegiosEliminarPagosViewModel : BindableBase
+    {
+        private static int _id = 0; // Variable para almacenar el Id del privilegio seleccionado    
+
+
+        private bool _readonly = true;
+        public bool ReadOnly
+        {
+            get { return _readonly  ; }
+            set { SetProperty(ref _readonly  , value); }
+        }
+
+        //Crear una lista llamada ItemsUsuariosB con IdUsuario y  Usuario Solo esos 2 propiedades 
+        
+
+
+
+        private List<Usuarios>  _itemsusuarios;
+        public List<Usuarios> ItemsUsuarios
+        {   
+            get => _itemsusuarios; 
+            set =>  SetProperty(ref _itemsusuarios, value); 
+        }
+
+
+        private ObservableCollection<ADMPRIVCONTROL> _privilegios;
+        public ObservableCollection<ADMPRIVCONTROL> Privilegios
+        {
+           get => _privilegios;    
+           set => SetProperty(ref _privilegios, value);     
+        }    
+
+        private ADMPRIVCONTROL _privilegioSeleccionado;
+        public ADMPRIVCONTROL PrivilegioSeleccionado
+        {
+           get => _privilegioSeleccionado;
+           set => SetProperty(ref _privilegioSeleccionado, value);
+        }
+
+        private DependencyObject _dependency;
+        public DependencyObject Dependency
+        {
+            get { return _dependency; }
+            set { SetProperty(ref _dependency, value); }
+        }
+
+        public DelegateCommand<DependencyObject> IniciarCrearCommand { get; }
+        public DelegateCommand<DependencyObject> IniciarEditarCommand { get; }
+        public DelegateCommand<DependencyObject> IniciarMostrarCommand { get; }
+        public DelegateCommand<DependencyObject> IniciarCommand { get; }
+
+        public DelegateCommand IrMostrarCommand { get; }
+        public DelegateCommand IrEditarCommand { get; }
+        public DelegateCommand IrInsertarCommand { get; }
+
+        public DelegateCommand RegresarCommand { get; }
+        public DelegateCommand GuardarCommand { get; }
+        public DelegateCommand InsertarCommand { get; }
+
+
+        public PrivilegiosEliminarPagosViewModel()    
+        {
+          
+            GuardarCommand = new DelegateCommand(GuardarPrivilegio);
+            InsertarCommand = new DelegateCommand(InsertarPrivilegio);
+
+
+            RegresarCommand = new DelegateCommand(Regresar);
+
+
+            IniciarCommand = new DelegateCommand<DependencyObject>(IniciarPrivilegio);
+            IniciarMostrarCommand = new DelegateCommand<DependencyObject>(MostrarPrivilegio);
+            IniciarEditarCommand = new DelegateCommand<DependencyObject>(EditarPrivilegio);
+            IniciarCrearCommand = new DelegateCommand<DependencyObject>(CrearPrivilegio);
+
+            IrMostrarCommand = new DelegateCommand(IrMostrar);
+            IrEditarCommand = new DelegateCommand(IrEditar);
+            IrInsertarCommand = new DelegateCommand(IrInsertar);
+        }
+
+
+    
+        private void IrEditar()
+        {
+            string page = "Configuracion.Pages.Privilegios.EditarEliminarPagosView";
+            Navegacion(page, "derecha");
+        }
+
+        private void Regresar()
+        {
+            string page = "Configuracion.Pages.Privilegios.EliminarPagosView";
+            Navegacion(page, "derecha");
+        }
+
+        private void IrInsertar()
+        {
+            string page = "Configuracion.Pages.Privilegios.CrearEliminarPagosView";
+            Navegacion(page, "derecha");
+        }
+
+        private void IrMostrar()
+        {
+            if (PrivilegioSeleccionado != null)
+            {
+                _id = PrivilegioSeleccionado.IdControlAcceso; // Asignar el Id del privilegio seleccionado
+                string page = "Configuracion.Pages.Privilegios.MostrarEliminarPagosView";
+                Navegacion(page, "derecha");
+            }
+        }
+
+        private async void IniciarPrivilegio(DependencyObject obj)
+        {
+            await ObtenerDependencia(obj);
+            CargarPrivilegios();
+        }
+        private async Task ObtenerDependencia(DependencyObject obj)
+        {
+            await Task.Run(() =>
+            {
+                Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    Dependency = obj;
+                }));
+            });
+        }
+        private void Navegacion(string page, string efecto) //Metodo que realiza la accion de navegar entre paginas
+        {
+            NavigationPages _nav = new NavigationPages();
+            _nav.PageNavigate(Dependency, page, efecto);
+        }
+        private async void CargarPrivilegios()
+        {
+            var privilegios = await PrivilegiosEliminarPagosModel.ObtenerTodosLosRegistros();
+            Privilegios = new ObservableCollection<ADMPRIVCONTROL>(privilegios);
+        }
+        private async void InsertarPrivilegio()
+        {
+            var result = await PrivilegiosEliminarPagosModel.CrearRegistro(PrivilegioSeleccionado);
+            Regresar();
+        }
+
+        private async void GuardarPrivilegio()
+        {
+            var result = await PrivilegiosEliminarPagosModel.ActualizarRegistro(PrivilegioSeleccionado);
+            Regresar();
+        }
+
+
+        private async void MostrarPrivilegio(DependencyObject obj)    
+        {   
+            await ObtenerDependencia(obj);            
+            PrivilegioSeleccionado = await PrivilegiosEliminarPagosModel.ObtenerRegistro(_id);
+        }
+
+        private async void EditarPrivilegio(DependencyObject obj)
+        {
+            await ObtenerDependencia(obj);
+            ReadOnly = false; // Cambia el estado a editable    
+            PrivilegioSeleccionado = await PrivilegiosEliminarPagosModel.ObtenerRegistro(_id);
+            var data  = await UsuariosModel.ObtenerTodosLosRegistrosActivos();
+            ItemsUsuarios = data.Select(x => new Usuarios { IdUsuario = x.Id, Usuario = x.Usuario }).ToList();
+        }
+        private async void CrearPrivilegio(DependencyObject obj)
+        {
+           
+            await ObtenerDependencia(obj);
+            ReadOnly = false; // Cambia el estado a editable
+            PrivilegioSeleccionado = new ADMPRIVCONTROL();
+            PrivilegioSeleccionado.IdControlAcceso = 0; // Asegurarse de que el Id sea 0 para un nuevo registro
+            PrivilegioSeleccionado.Acceso = 1; // Asignar un valor por defecto para Acceso
+            var data = await UsuariosModel.ObtenerTodosLosRegistrosActivos();
+            ItemsUsuarios = data.Select(x => new Usuarios { IdUsuario = x.Id, Usuario = x.Usuario }).ToList();
+        }
+
+    }
+
+
+    public class Usuarios
+    {
+        public int IdUsuario { get; set; }
+        public string Usuario { get; set; }
+    }
+}
+
+
+
+ 
+ 
